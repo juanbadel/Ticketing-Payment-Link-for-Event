@@ -1,0 +1,30 @@
+import "dotenv/config";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import express from "express";
+import { checkoutRouter } from "./routes/checkout.js";
+import { webhookRouter } from "./routes/webhook.js";
+import { verifyRouter } from "./routes/verify.js";
+import { eventRouter } from "./routes/event.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+const app = express();
+
+// Le webhook a besoin du corps brut : on le monte AVANT express.json().
+app.use("/api", webhookRouter);
+
+app.use(express.json());
+app.use("/api", checkoutRouter);
+app.use("/api", verifyRouter);
+app.use("/api", eventRouter);
+
+// Page de vente (infos événement + bouton d'achat) et pages de retour Stripe.
+app.use(express.static(path.join(__dirname, "..", "public")));
+
+app.get("/health", (req, res) => res.json({ ok: true }));
+
+const port = process.env.PORT || 4242;
+app.listen(port, () => {
+  console.log(`Serveur billetterie démarré sur http://localhost:${port}`);
+});

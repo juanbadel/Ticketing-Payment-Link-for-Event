@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Billetterie</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #111827;
+      color: #f9fafb;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      max-width: 480px;
+      width: 100%;
+      background: #1f2937;
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+    h1 { margin: 0 0 8px; font-size: 28px; }
+    .meta { color: #9ca3af; font-size: 14px; margin-bottom: 4px; }
+    .description { margin: 20px 0; line-height: 1.5; color: #e5e7eb; }
+    .price { font-size: 24px; font-weight: 700; margin: 20px 0; }
+    button {
+      width: 100%;
+      padding: 14px;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      border-radius: 10px;
+      background: #6366f1;
+      color: white;
+      cursor: pointer;
+    }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    button:hover:not(:disabled) { background: #4f46e5; }
+    .error { color: #f87171; margin-top: 12px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1 id="event-name">[NOM DE L'ÉVÉNEMENT]</h1>
+    <div class="meta" id="event-date">[DATE]</div>
+    <div class="meta" id="event-location">[LIEU]</div>
+    <p class="description" id="event-description">[DESCRIPTION DE L'ÉVÉNEMENT]</p>
+    <div class="price" id="event-price">—</div>
+    <button id="buy-button">Acheter mon billet</button>
+    <div class="error" id="error-message"></div>
+  </div>
+
+  <script>
+    async function loadEvent() {
+      try {
+        const res = await fetch("/api/event");
+        const data = await res.json();
+
+        document.getElementById("event-name").textContent = data.name;
+        document.getElementById("event-date").textContent = data.date || "[DATE]";
+        document.getElementById("event-location").textContent = data.location || "[LIEU]";
+        document.getElementById("event-description").textContent =
+          data.description || "[DESCRIPTION DE L'ÉVÉNEMENT]";
+
+        if (data.priceCents != null) {
+          const amount = (data.priceCents / 100).toFixed(2);
+          document.getElementById("event-price").textContent =
+            `${amount} ${data.currency.toUpperCase()}`;
+        } else {
+          document.getElementById("event-price").textContent = "";
+        }
+      } catch (err) {
+        console.error("Impossible de charger les infos de l'événement", err);
+      }
+    }
+
+    async function buyTicket() {
+      const button = document.getElementById("buy-button");
+      const errorEl = document.getElementById("error-message");
+      errorEl.textContent = "";
+      button.disabled = true;
+      button.textContent = "Redirection vers le paiement…";
+
+      try {
+        const res = await fetch("/api/create-checkout-session", { method: "POST" });
+        const data = await res.json();
+
+        if (!res.ok || !data.url) {
+          throw new Error(data.error || "Erreur inconnue");
+        }
+
+        window.location.href = data.url;
+      } catch (err) {
+        errorEl.textContent = "Impossible de démarrer le paiement. Réessaie plus tard.";
+        button.disabled = false;
+        button.textContent = "Acheter mon billet";
+      }
+    }
+
+    document.getElementById("buy-button").addEventListener("click", buyTicket);
+    loadEvent();
+  </script>
+</body>
+</html>
