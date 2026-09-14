@@ -1,11 +1,17 @@
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_APP_PASSWORD,
+  },
+});
 
 export async function sendTicketEmail({ to, name, ticketId, qrPngBuffer }) {
   const eventName = process.env.EVENT_NAME || "l'événement";
 
-  await resend.emails.send({
+  await transporter.sendMail({
     from: process.env.EMAIL_FROM,
     to,
     subject: `Ton billet pour ${eventName}`,
@@ -22,8 +28,8 @@ export async function sendTicketEmail({ to, name, ticketId, qrPngBuffer }) {
     attachments: [
       {
         filename: "billet-qrcode.png",
-        content: qrPngBuffer.toString("base64"),
-        contentId: "ticket-qr",
+        content: qrPngBuffer,
+        cid: "ticket-qr",
       },
     ],
   });

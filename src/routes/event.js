@@ -10,9 +10,8 @@ eventRouter.get("/event", (req, res) => {
     date: process.env.EVENT_DATE || "",
     location: process.env.EVENT_LOCATION || "",
     description: process.env.EVENT_DESCRIPTION || "",
-    priceCents: process.env.STRIPE_PRICE_ID
-      ? null
-      : Number(process.env.TICKET_AMOUNT_CENTS || 2000),
+    includes: process.env.EVENT_INCLUDES || "",
+    priceCents: Number(process.env.TICKET_AMOUNT_CENTS || 2000),
     currency: process.env.TICKET_CURRENCY || "eur",
   });
 });

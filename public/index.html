@@ -4,56 +4,61 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Billetterie</title>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #111827;
-      color: #f9fafb;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-    }
-    .card {
-      max-width: 480px;
-      width: 100%;
-      background: #1f2937;
-      border-radius: 16px;
-      padding: 32px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    }
-    h1 { margin: 0 0 8px; font-size: 28px; }
-    .meta { color: #9ca3af; font-size: 14px; margin-bottom: 4px; }
-    .description { margin: 20px 0; line-height: 1.5; color: #e5e7eb; }
-    .price { font-size: 24px; font-weight: 700; margin: 20px 0; }
-    button {
-      width: 100%;
-      padding: 14px;
-      font-size: 16px;
-      font-weight: 600;
-      border: none;
-      border-radius: 10px;
-      background: #6366f1;
-      color: white;
-      cursor: pointer;
-    }
-    button:disabled { opacity: 0.6; cursor: not-allowed; }
-    button:hover:not(:disabled) { background: #4f46e5; }
-    .error { color: #f87171; margin-top: 12px; font-size: 14px; }
-  </style>
+  <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
   <div class="card">
-    <h1 id="event-name">[NOM DE L'ÉVÉNEMENT]</h1>
-    <div class="meta" id="event-date">[DATE]</div>
-    <div class="meta" id="event-location">[LIEU]</div>
-    <p class="description" id="event-description">[DESCRIPTION DE L'ÉVÉNEMENT]</p>
-    <div class="price" id="event-price">—</div>
-    <button id="buy-button">Acheter mon billet</button>
+    <img class="logo" src="/logo.png" alt="Sous Le Baobab — Cameroonian & European Brunch" />
+
+    <div class="brand-tag">FOOD · CULTURE · PEOPLE · GOOD VIBES</div>
+    <p class="description" id="event-description-title">[DESCRIPTION DE L'ÉVÉNEMENT]</p>
+    <button type="button" class="info-toggle" id="description-toggle" aria-expanded="false" aria-controls="description-popover" style="display:none;">
+      <span class="info-icon">i</span> Click me to know more
+    </button>
+    <div class="description-popover" id="description-popover" hidden>
+      <p id="event-description-body"></p>
+    </div>
+    <div class="divider"></div>
+
+    <div class="features">
+      <div class="feature">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3v7a3 3 0 0 0 6 0V3M7 10v11M17 3c-2 2-2 5-2 7a2 2 0 0 0 4 0c0-2 0-5-2-7ZM17 13v8" /></svg>
+        <span>AUTHENTIC<br />FLAVORS</span>
+      </div>
+      <div class="feature">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM21 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
+        <span>GOOD<br />MUSIC</span>
+      </div>
+      <div class="feature">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-8-4.9-8-11.2A4.8 4.8 0 0 1 12 6a4.8 4.8 0 0 1 8 3.8C20 16.1 12 21 12 21Z" /></svg>
+        <span>AMAZING<br />PEOPLE</span>
+      </div>
+    </div>
+
+    <div class="meta-row">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18M8 3v4M16 3v4" /></svg>
+      <span id="event-date">[DATE]</span>
+    </div>
+    <div class="meta-row">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21Z" /><circle cx="12" cy="9.5" r="2.5" /></svg>
+      <span id="event-location">[LIEU]</span>
+    </div>
+
+    <div class="price-box">
+      <div class="amount" id="event-price">—</div>
+      <div class="unit">PER PERSON</div>
+      <div class="includes" id="event-includes" style="display:none;"></div>
+    </div>
+
+    <div class="buyer-form">
+      <input type="text" id="buyer-name" placeholder="Ton prénom" autocomplete="given-name" />
+      <input type="email" id="buyer-email" placeholder="Ton email" autocomplete="email" required />
+    </div>
+    <button id="buy-button">Payer avec PayPal</button>
     <div class="error" id="error-message"></div>
+    <p class="note">Tu seras redirigé vers PayPal pour payer. Ton billet (QR code) te sera envoyé par email une fois le paiement confirmé.</p>
+
+    <div class="footer-tag">FOOD • CULTURE • CONNECTION</div>
   </div>
 
   <script>
@@ -62,11 +67,19 @@
         const res = await fetch("/api/event");
         const data = await res.json();
 
-        document.getElementById("event-name").textContent = data.name;
+        const rawDescription = data.description || "[DESCRIPTION DE L'ÉVÉNEMENT]";
+        const [title, ...restParts] = rawDescription.split("\n\n");
+        const rest = restParts.join("\n\n");
+
+        document.getElementById("event-description-title").innerHTML = title;
+
+        if (rest) {
+          document.getElementById("event-description-body").innerHTML = rest;
+          document.getElementById("description-toggle").style.display = "";
+        }
+
         document.getElementById("event-date").textContent = data.date || "[DATE]";
         document.getElementById("event-location").textContent = data.location || "[LIEU]";
-        document.getElementById("event-description").textContent =
-          data.description || "[DESCRIPTION DE L'ÉVÉNEMENT]";
 
         if (data.priceCents != null) {
           const amount = (data.priceCents / 100).toFixed(2);
@@ -74,6 +87,12 @@
             `${amount} ${data.currency.toUpperCase()}`;
         } else {
           document.getElementById("event-price").textContent = "";
+        }
+
+        if (data.includes) {
+          const includesEl = document.getElementById("event-includes");
+          includesEl.textContent = data.includes;
+          includesEl.style.display = "block";
         }
       } catch (err) {
         console.error("Impossible de charger les infos de l'événement", err);
@@ -83,25 +102,51 @@
     async function buyTicket() {
       const button = document.getElementById("buy-button");
       const errorEl = document.getElementById("error-message");
+      const name = document.getElementById("buyer-name").value.trim();
+      const email = document.getElementById("buyer-email").value.trim();
       errorEl.textContent = "";
+
+      if (!email) {
+        errorEl.textContent = "Merci de renseigner ton email.";
+        return;
+      }
+
       button.disabled = true;
-      button.textContent = "Redirection vers le paiement…";
+      button.textContent = "Redirection vers PayPal…";
 
       try {
-        const res = await fetch("/api/create-checkout-session", { method: "POST" });
+        const res = await fetch("/api/create-reservation", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email }),
+        });
         const data = await res.json();
 
-        if (!res.ok || !data.url) {
+        if (!res.ok || !data.paypalUrl) {
           throw new Error(data.error || "Erreur inconnue");
         }
 
-        window.location.href = data.url;
+        window.location.href = data.paypalUrl;
       } catch (err) {
         errorEl.textContent = "Impossible de démarrer le paiement. Réessaie plus tard.";
         button.disabled = false;
-        button.textContent = "Acheter mon billet";
+        button.textContent = "Payer avec PayPal";
       }
     }
+
+    document.getElementById("description-toggle").addEventListener("click", () => {
+      const popover = document.getElementById("description-popover");
+      const toggle = document.getElementById("description-toggle");
+      const isHidden = popover.hasAttribute("hidden");
+
+      if (isHidden) {
+        popover.removeAttribute("hidden");
+        toggle.setAttribute("aria-expanded", "true");
+      } else {
+        popover.setAttribute("hidden", "");
+        toggle.setAttribute("aria-expanded", "false");
+      }
+    });
 
     document.getElementById("buy-button").addEventListener("click", buyTicket);
     loadEvent();

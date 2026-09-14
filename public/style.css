@@ -1,0 +1,287 @@
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,500&display=swap");
+
+:root {
+  --cream: #f4ede0;
+  --cream-soft: #ece1cd;
+  --green: #33402c;
+  --green-deep: #26301f;
+  --gold: #b6884f;
+  --gold-light: #d3ac74;
+  --ink-muted: #6b6355;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--cream);
+  color: var(--green);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+}
+
+.card {
+  position: relative;
+  max-width: 460px;
+  width: 100%;
+  background: var(--cream);
+  border: 1px solid rgba(182, 136, 79, 0.35);
+  border-radius: 28px;
+  padding: 44px 36px 36px;
+  box-shadow: 0 18px 45px rgba(38, 48, 31, 0.15);
+  overflow: hidden;
+  text-align: center;
+}
+
+.card::before,
+.card::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  z-index: 0;
+}
+
+.card::before {
+  width: 150px;
+  height: 150px;
+  background: var(--green-deep);
+  left: -70px;
+  bottom: -70px;
+}
+
+.card::after {
+  width: 110px;
+  height: 110px;
+  background: var(--gold-light);
+  right: -55px;
+  top: -55px;
+  opacity: 0.6;
+}
+
+.card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.logo {
+  width: 220px;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto 6px;
+  display: block;
+}
+
+.brand-tag {
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: var(--ink-muted);
+  margin-bottom: 6px;
+}
+
+.description {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--green);
+  white-space: pre-line;
+  margin: 2px 0 18px;
+}
+
+.divider {
+  width: 60px;
+  height: 1px;
+  background: var(--gold);
+  margin: 0 auto 22px;
+  opacity: 0.6;
+}
+
+.info-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: auto;
+  padding: 6px 14px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  border: 1px solid rgba(182, 136, 79, 0.5);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--gold);
+  cursor: pointer;
+  margin-top: 2px;
+  font-family: inherit;
+}
+
+.info-toggle:hover {
+  background: rgba(182, 136, 79, 0.12);
+}
+
+.info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 1px solid var(--gold);
+  font-size: 10px;
+  font-style: italic;
+  font-family: Georgia, serif;
+}
+
+.description-popover {
+  text-align: left;
+  background: var(--cream-soft);
+  border: 1px solid rgba(182, 136, 79, 0.3);
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin-top: 14px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--green);
+  white-space: pre-line;
+}
+
+.description-popover[hidden] {
+  display: none;
+}
+
+.features {
+  display: flex;
+  justify-content: center;
+  gap: 22px;
+  margin-bottom: 26px;
+}
+
+.feature {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  max-width: 90px;
+}
+
+.feature svg {
+  width: 22px;
+  height: 22px;
+  stroke: var(--gold);
+}
+
+.feature span {
+  font-size: 10.5px;
+  letter-spacing: 1px;
+  color: var(--green);
+  line-height: 1.3;
+}
+
+.meta-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 10px;
+  text-align: left;
+  margin-bottom: 10px;
+  font-size: 13.5px;
+  color: var(--green);
+}
+
+.meta-row svg {
+  width: 16px;
+  height: 16px;
+  stroke: var(--green);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.price-box {
+  background: var(--gold);
+  color: #fff;
+  border-radius: 14px;
+  padding: 16px 20px;
+  margin: 22px 0 10px;
+}
+
+.price-box .amount {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.price-box .unit {
+  font-size: 13px;
+  letter-spacing: 1px;
+  opacity: 0.95;
+}
+
+.price-box .includes {
+  font-size: 11.5px;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
+  opacity: 0.9;
+}
+
+.buyer-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+  margin-bottom: 6px;
+}
+
+.buyer-form input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(51, 64, 44, 0.25);
+  background: #fff;
+  font-size: 14px;
+  color: var(--green);
+  font-family: inherit;
+}
+
+.buyer-form input:focus {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+}
+
+.note {
+  font-size: 11.5px;
+  color: var(--ink-muted);
+  line-height: 1.4;
+  margin-top: 10px;
+}
+
+button {
+  width: 100%;
+  padding: 15px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  border: none;
+  border-radius: 12px;
+  background: var(--green);
+  color: var(--cream);
+  cursor: pointer;
+  margin-top: 8px;
+  transition: background 0.15s ease;
+}
+
+button:disabled { opacity: 0.6; cursor: not-allowed; }
+button:hover:not(:disabled) { background: var(--green-deep); }
+
+.error {
+  color: #a5432f;
+  margin-top: 12px;
+  font-size: 13px;
+}
+
+.footer-tag {
+  margin-top: 26px;
+  font-size: 10.5px;
+  letter-spacing: 2px;
+  color: var(--ink-muted);
+}
