@@ -1,6 +1,9 @@
 import Database from "better-sqlite3";
 
-const db = new Database("tickets.db");
+// En production (Render...), DB_PATH doit pointer vers un disque persistant
+// (ex. /var/data/tickets.db) sinon les réservations/billets sont perdus à
+// chaque redéploiement ou redémarrage.
+const db = new Database(process.env.DB_PATH || "tickets.db");
 
 db.pragma("journal_mode = WAL");
 
