@@ -1,23 +1,23 @@
 # Ticketing Backend
 
-Ticketing backend: PayPal.me payment, QR-code ticket generation, email delivery, and ticket verification at the door.
+Ticketing backend: PayPal.me payment, manual payment confirmation, QR-code ticket generation, email delivery, and ticket verification at the door.
 
 ## How it works
 
 1. The visitor lands on the sales page (`/`), served directly by this backend, showing the event info and a small form (name + email).
 2. Submitting the form calls `POST /api/create-reservation`, which creates a *pending* reservation in the database and returns a `paypal.me` payment link. The browser is redirected there immediately.
-3. The visitor pays on PayPal. PayPal then sends an **IPN (Instant Payment Notification)** to `POST /api/paypal-ipn`.
-4. The IPN handler verifies the notification with PayPal, checks the amount/currency, and matches it to the oldest pending reservation for that amount (PayPal.me payments aren't tied to a specific checkout session, so this is a best-effort match — see caveat below). It then generates a ticket (QR code) and emails it to the buyer.
+3. The visitor pays on PayPal.
+4. The organizer checks their own PayPal account for the incoming payment, then opens `/admin.html`, enters the staff key, finds the matching pending reservation, and clicks **"Confirm payment & send ticket"**. This marks the reservation as paid and emails the ticket (QR code) to the buyer.
 5. On the day of the event, staff scan the QR code and call `POST /api/verify-ticket` to validate entry.
 
-No external website is needed: the sales page is served by this same Express server from the `public/` folder.
+No external website is needed: the sales page and admin page are served by this same Express server from the `public/` folder.
 
-**Caveat**: because `paypal.me` links aren't created through an API call, PayPal doesn't tell us *who* paid — only *how much*. Matching is done by "oldest pending reservation with a matching amount, reserved in the last 2 hours". This works well for normal traffic but can theoretically mismatch two buyers if several reservations for the exact same amount are pending at once and paid out of order. For a small one-off event this risk is low; keep an eye on `tickets.db` around the event if you want to double-check.
+**Why manual confirmation?** `paypal.me` payments aren't tied to an API call, so PayPal can't automatically tell this server "payment X is for reservation Y" without either a PayPal Business account (for the Checkout API) or IPN notifications (whose settings PayPal generally only exposes to Business accounts too). Confirming manually avoids needing a Business account entirely — for a small one-off event, checking a handful of payments by hand is simple and reliable.
 
 ## Stack
 
 - [Express](https://expressjs.com/) — HTTP server
-- [PayPal.me](https://paypal.me/) + IPN — payment (no PayPal Developer app or API keys needed)
+- [PayPal.me](https://paypal.me/) — payment link (no PayPal Developer app, API keys, or Business account needed)
 - [better-sqlite3](https://github.com/WiseLibs/better-sqlite3) — ticket/reservation storage
 - [qrcode](https://www.npmjs.com/package/qrcode) — QR code generation
 - [Nodemailer](https://nodemailer.com/) + Gmail SMTP — email delivery (no custom domain needed)
@@ -48,15 +48,13 @@ Edit `EVENT_NAME`, `EVENT_DATE`, `EVENT_LOCATION`, and `EVENT_DESCRIPTION` in `.
 EVENT_DESCRIPTION="<strong>Welcome!</strong>\n\nFirst hidden paragraph.\n\nSecond hidden paragraph."
 ```
 
-### Configuring PayPal IPN
+### Confirming payments (`/admin.html`)
 
-1. Log into the PayPal account that will receive payments (a **Personal** account works, no Business account required).
-2. Go to **Account Settings → Notifications → Instant Payment Notifications (IPN)** and click **Update**.
-3. Set the notification URL to `https://your-domain.com/api/paypal-ipn` and turn IPN **on**.
-4. Set `PAYPAL_ME_USERNAME` (your `paypal.me/<username>`) and `PAYPAL_RECEIVER_EMAIL` (the email on that PayPal account) in `.env`.
-5. Test first with a [PayPal Sandbox](https://developer.paypal.com/tools/sandbox/) account and `PAYPAL_ENV=sandbox` before going live with `PAYPAL_ENV=live`.
+1. Set `PAYPAL_ME_USERNAME` in `.env` to your `paypal.me/<username>`.
+2. Open `https://<your-domain>/admin.html`, enter `STAFF_API_KEY` when prompted (it's remembered for the browser session).
+3. When a buyer pays, check your PayPal account (app or website) for the incoming payment, then find the matching reservation on the admin page (same name/email/amount) and click **"Confirm payment & send ticket"**.
 
-IPN requires a **publicly reachable HTTPS URL** — it won't work against `localhost`, so this step can only be tested once deployed (or via a tunnel like `ngrok` during development).
+This works identically in local dev (`http://localhost:4242/admin.html`) and once deployed.
 
 ### Configuring Gmail sending
 
@@ -72,8 +70,6 @@ Gmail caps sending at ~500 emails/day on a regular account, which is far more th
 | Variable | Description |
 | --- | --- |
 | `PAYPAL_ME_USERNAME` | Your `paypal.me/<username>`, used to build the payment link |
-| `PAYPAL_RECEIVER_EMAIL` | Email on the receiving PayPal account, used to sanity-check incoming IPNs |
-| `PAYPAL_ENV` | `sandbox` while testing, `live` for the real event |
 | `TICKET_AMOUNT_CENTS` | Ticket price in cents |
 | `TICKET_CURRENCY` | Ticket currency (e.g. `eur`) |
 | `GMAIL_USER` | Gmail address tickets are sent from |
@@ -86,18 +82,20 @@ Gmail caps sending at ~500 emails/day on a regular account, which is far more th
 | `EVENT_INCLUDES` | Optional note on what's included, shown under the price (e.g. "Includes brunch + 1 welcome drink") |
 | `PORT` | Server port (default `4242`) |
 | `DB_PATH` | Path to the SQLite file (default `./tickets.db`). In production, point this to a persistent disk — see [Deploying on Render](#deploying-on-render) |
-| `STAFF_API_KEY` | Secret key protecting `/api/verify-ticket` |
+| `STAFF_API_KEY` | Secret key protecting `/api/verify-ticket` and the `/admin.html` payment-confirmation page |
 
 ## Endpoints
 
 | Method | Route | Description |
 | --- | --- | --- |
 | `POST` | `/api/create-reservation` | Creates a pending reservation and returns the `paypal.me` payment URL |
-| `POST` | `/api/paypal-ipn` | Receives PayPal payment notifications (IPN-verified) |
+| `GET` | `/api/admin/reservations` | Lists pending reservations (requires the `x-staff-key` header) |
+| `POST` | `/api/admin/reservations/:id/confirm` | Marks a reservation paid and emails the ticket (requires the `x-staff-key` header) |
 | `POST` | `/api/verify-ticket` | Verifies and consumes a ticket (requires the `x-staff-key` header) |
 | `GET` | `/api/event` | Returns the event info (used by the sales page) |
 | `GET` | `/health` | Server health check |
 | `GET` | `/` | Sales page (event info + reservation form) |
+| `GET` | `/admin.html` | Payment confirmation page for the organizer |
 
 ### Verifying a ticket
 
@@ -119,22 +117,23 @@ Tickets/reservations are stored in a SQLite file (path set by `DB_PATH`, default
    - Start command: `npm start`
 2. Add all variables from `.env` under the service's **Environment** settings.
 3. Add a **persistent Disk** (Advanced → Add Disk), mounted at e.g. `/var/data`, and set `DB_PATH=/var/data/tickets.db` in the environment variables. Without this, `tickets.db` lives on the ephemeral filesystem and every reservation/ticket is lost on redeploy or restart.
-4. Once deployed, use the Render URL (or a custom domain) to finish the [PayPal IPN setup](#configuring-paypal-ipn), pointing to `https://<your-service>.onrender.com/api/paypal-ipn`.
+4. Once deployed, confirm payments at `https://<your-service>.onrender.com/admin.html`.
 
 ## Project structure
 
 ```
 public/
 ├── index.html            # sales page (event info + reservation form)
-├── style.css              # shared styling
-└── logo.png                # event logo shown at the top of the sales page
+├── admin.html             # payment confirmation page for the organizer
+├── style.css               # shared styling
+└── logo.png                 # event logo shown at the top of the sales page
 
 src/
 ├── index.js            # entry point, mounts routes + static files
 ├── db.js                # SQLite access (reservations/tickets)
 ├── routes/
 │   ├── reservation.js    # POST /api/create-reservation
-│   ├── paypalIpn.js       # POST /api/paypal-ipn
+│   ├── admin.js           # GET /api/admin/reservations, POST /api/admin/reservations/:id/confirm
 │   ├── verify.js          # POST /api/verify-ticket
 │   └── event.js            # GET /api/event
 └── services/

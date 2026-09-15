@@ -285,3 +285,91 @@ button:hover:not(:disabled) { background: var(--green-deep); }
   letter-spacing: 2px;
   color: var(--ink-muted);
 }
+
+.admin-card {
+  max-width: 640px;
+  text-align: center;
+}
+
+.admin-title {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 22px;
+  margin: 4px 0 6px;
+  color: var(--green);
+}
+
+.key-gate {
+  display: flex;
+  gap: 10px;
+}
+
+.key-gate input {
+  flex: 1;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(51, 64, 44, 0.25);
+  background: #fff;
+  font-size: 14px;
+  color: var(--green);
+  font-family: inherit;
+}
+
+.key-gate button {
+  width: auto;
+  margin-top: 0;
+  padding: 12px 20px;
+}
+
+.secondary-button {
+  width: auto;
+  padding: 8px 16px;
+  font-size: 13px;
+  background: transparent;
+  color: var(--green);
+  border: 1px solid rgba(51, 64, 44, 0.3);
+  margin: 0 0 16px;
+}
+
+.secondary-button:hover:not(:disabled) {
+  background: rgba(51, 64, 44, 0.08);
+}
+
+.reservation-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  text-align: left;
+  background: var(--cream-soft);
+  border: 1px solid rgba(182, 136, 79, 0.3);
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.reservation-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+  color: var(--green);
+}
+
+.reservation-info span {
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+
+.confirm-button {
+  width: auto;
+  padding: 10px 16px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.empty-state {
+  color: var(--ink-muted);
+  font-size: 14px;
+  padding: 20px 0;
+}

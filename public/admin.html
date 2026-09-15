@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — Ticketing</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="card admin-card">
+    <img class="logo" src="/logo.png" alt="Sous Le Baobab" style="width:130px;" />
+    <h2 class="admin-title">Pending reservations</h2>
+    <p class="note" style="margin-bottom:18px;">
+      Check your PayPal account for the payment, then confirm the matching
+      reservation below to email the ticket (QR code) to the buyer.
+    </p>
+
+    <div class="key-gate" id="key-gate">
+      <input type="password" id="staff-key" placeholder="Staff key" autocomplete="off" />
+      <button id="unlock-button">Unlock</button>
+    </div>
+
+    <div id="admin-content" hidden>
+      <button type="button" class="secondary-button" id="refresh-button">Refresh</button>
+      <div id="reservations-list"></div>
+    </div>
+
+    <div class="error" id="admin-error"></div>
+  </div>
+
+  <script>
+    let staffKey = sessionStorage.getItem("staffKey") || "";
+
+    const keyGate = document.getElementById("key-gate");
+    const adminContent = document.getElementById("admin-content");
+    const errorEl = document.getElementById("admin-error");
+    const listEl = document.getElementById("reservations-list");
+
+    function formatAmount(cents, currency) {
+      return `${(cents / 100).toFixed(2)} ${currency.toUpperCase()}`;
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement("div");
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function showGate(message) {
+      sessionStorage.removeItem("staffKey");
+      keyGate.hidden = false;
+      adminContent.hidden = true;
+      if (message) errorEl.textContent = message;
+    }
+
+    function renderList(reservations) {
+      if (reservations.length === 0) {
+        listEl.innerHTML = '<p class="empty-state">No pending reservations.</p>';
+        return;
+      }
+
+      listEl.innerHTML = reservations
+        .map((r) => {
+          const requested = new Date(r.created_at.replace(" ", "T") + "Z").toLocaleString();
+          return `
+            <div class="reservation-row">
+              <div class="reservation-info">
+                <strong>${escapeHtml(r.name || "(no name)")}</strong>
+                <span>${escapeHtml(r.email)}</span>
+                <span>${formatAmount(r.amount_cents, r.currency)} — requested ${requested}</span>
+              </div>
+              <button type="button" class="confirm-button" data-id="${r.id}">
+                Confirm payment &amp; send ticket
+              </button>
+            </div>
+          `;
+        })
+        .join("");
+    }
+
+    async function loadReservations() {
+      errorEl.textContent = "";
+      try {
+        const res = await fetch("/api/admin/reservations", {
+          headers: { "x-staff-key": staffKey },
+        });
+
+        if (res.status === 401) {
+          showGate("Invalid staff key.");
+          return;
+        }
+
+        const data = await res.json();
+        renderList(data);
+      } catch (err) {
+        errorEl.textContent = "Unable to load reservations.";
+      }
+    }
+
+    listEl.addEventListener("click", async (e) => {
+      const button = e.target.closest(".confirm-button");
+      if (!button) return;
+
+      const id = button.dataset.id;
+      button.disabled = true;
+      button.textContent = "Sending…";
+
+      try {
+        const res = await fetch(`/api/admin/reservations/${id}/confirm`, {
+          method: "POST",
+          headers: { "x-staff-key": staffKey },
+        });
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error || "Failed");
+
+        loadReservations();
+      } catch (err) {
+        errorEl.textContent = "Could not confirm this reservation.";
+        button.disabled = false;
+        button.textContent = "Confirm payment & send ticket";
+      }
+    });
+
+    document.getElementById("unlock-button").addEventListener("click", () => {
+      const value = document.getElementById("staff-key").value.trim();
+      if (!value) return;
+
+      staffKey = value;
+      sessionStorage.setItem("staffKey", staffKey);
+      keyGate.hidden = true;
+      adminContent.hidden = false;
+      loadReservations();
+    });
+
+    document.getElementById("refresh-button").addEventListener("click", loadReservations);
+
+    if (staffKey) {
+      keyGate.hidden = true;
+      adminContent.hidden = false;
+      loadReservations();
+    }
+  </script>
+</body>
+</html>

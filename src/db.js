@@ -27,19 +27,12 @@ export function createReservation({ id, email, name, amountCents, currency }) {
   ).run(id, email, name ?? null, amountCents, currency);
 }
 
-// Un paiement PayPal.me n'est pas rattaché à une réservation précise : on le
-// rapproche de la plus ancienne réservation en attente avec le même montant,
-// dans une fenêtre de 2h (pour éviter de piocher une réservation abandonnée).
-export function findOldestPendingReservation({ amountCents, currency }) {
+// Utilisé par le tableau de bord admin : liste des réservations en attente
+// de confirmation manuelle de paiement.
+export function listPendingReservations() {
   return db
-    .prepare(
-      `SELECT * FROM tickets
-       WHERE status = 'pending' AND amount_cents = ? AND currency = ?
-         AND created_at >= datetime('now', '-2 hours')
-       ORDER BY created_at ASC
-       LIMIT 1`
-    )
-    .get(amountCents, currency);
+    .prepare(`SELECT * FROM tickets WHERE status = 'pending' ORDER BY created_at ASC`)
+    .all();
 }
 
 export function markReservationPaid(id) {
